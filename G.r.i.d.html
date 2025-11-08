@@ -204,9 +204,10 @@
     // === Supabase Setup ===
     import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
-    const SUPABASE_URL = "https://ughyxoxuzwtmaolkbtmj.supabase.co"; // <-- set this
-    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaHl4b3h1end0bWFvbGtidG1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NjQxMzcsImV4cCI6MjA3ODE0MDEzN30.jJKSh5fP8zusNmcelaP7fUJv7i3BbNqw_Z6lr7-7D2g"; // <-- set this
+    const SUPABASE_URL = "https://ughyxoxuzwtmaolkbtmj.supabase.co"; // set
+    const SUPABASE_ANON = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InVnaHl4b3h1end0bWFvbGtidG1qIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NjI1NjQxMzcsImV4cCI6MjA3ODE0MDEzN30.jJKSh5fP8zusNmcelaP7fUJv7i3BbNqw_Z6lr7-7D2g"; // set
 
+    const FAKE_EMAIL_DOMAIN = "grid.local"; // If your project uses an email domain allowlist, add this domain there OR change this to a domain you allow.
     const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
       auth: { persistSession: true, storageKey: "grid-auth-v1" },
     });
@@ -493,7 +494,7 @@
       const username = els.authUsername.value.trim(); const password = els.authPassword.value;
       if(username.length<3) return alert('Username must be at least 3 chars.');
       if(password.length<6) return alert('Password must be at least 6 chars.');
-      const pseudoEmail = `${username}@grid.local`;
+      const pseudoEmail = `${username}@${FAKE_EMAIL_DOMAIN}`;
       const { data, error } = await supabase.auth.signUp({ email: pseudoEmail, password });
       if(error){ alert(error.message); return; }
       await upsertProfile(data.user.id, username);
@@ -501,7 +502,7 @@
     };
     els.btnDoSignIn.onclick = async ()=>{
       const username = els.authUsername.value.trim(); const password = els.authPassword.value;
-      const email = `${username}@grid.local`;
+      const email = `${username}@${FAKE_EMAIL_DOMAIN}`;
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if(error){ alert(error.message); return; }
       closeAuth(); await refreshUserUI();
