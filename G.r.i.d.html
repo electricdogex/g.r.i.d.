@@ -1,1 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>G.R.I.D. — Learn to Code with TronCode</title>
+  <meta name="description" content="G.R.I.D. — a neon grid builder that teaches coding with a tiny language called TronCode. Uses Supabase for accounts and saving." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;700&family=Rubik:wght@300;400;600&display=swap" rel="stylesheet">
+  <style>
+    :root{
+      --bg:#0a0f1e;--panel:#0c1226;--muted:#8aa0ff33;--text:#e9edff;--accent:#6ff;--accent2:#7dffb7;--error:#ff6f91;--warn:#ffd166;--ok:#72f5a8;
+      --glow:0 0 12px rgba(111,255,255,.55), 0 0 32px rgba(66,205,255,.25);
+      --glow-2:0 0 10px rgba(125,255,183,.55), 0 0 26px rgba(125,255,183,.25);
+    }
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{margin:0;background:radial-gradient(1200px 800px at 65% -10%,#172552 0%,rgba(23,37,82,0) 60%),linear-gradient(180deg,#060a16,#0a0f1e 50%,#040611 100%);color:var(--text);font-family:Rubik,system-ui,Segoe UI,Roboto,Helvetica,Arial,sans-serif;}
+    a{color:var(--accent)}
+    .shell{display:grid;grid-template-columns: 320px 1fr;grid-template-rows:auto 1fr auto;min-height:100vh}
+    header{grid-column:1/-1;display:flex;gap:16px;align-items:center;padding:14px 16px;border-bottom:1px solid #1a2447;background:linear-gradient(180deg,#0e1630,#0c132a)}
+    .logo{display:flex;align-items:center;gap:12px}
+    .logo-mark{width:42px;height:42px;border:2px solid #35f1ff;border-radius:8px;position:relative;box-shadow:var(--glow)}
+    .logo-mark::after{content:"";position:absolute;inset:7px;border:2px dashed #7dffb7;border-radius:4px;box-shadow:var(--glow-2)}
+    .title{font-family:Orbitron,monospace;letter-spacing:1px;font-weight:700}
+    .title small{display:block;font-weight:400;letter-spacing:.25px;color:#c7d3ff99}
+    .spacer{flex:1}
+    .authbar{display:flex;align-items:center;gap:8px}
+    .btn{appearance:none;outline:none;border:1px solid #2a3566;background:#0e1a3a;color:var(--text);padding:8px 12px;border-radius:10px;cursor:pointer;transition:.2s;}
+    .btn:hover{transform:translateY(-1px);box-shadow:0 6px 20px rgba(0,0,0,.25), var(--glow)}
+    .btn.primary{border-color:#35f1ff;background:linear-gradient(180deg,#102a3c,#0e2539);box-shadow:var(--glow)}
+    .btn.warn{border-color:var(--warn)}
+    .btn.ghost{background:transparent}
 
+    .sidebar{border-right:1px solid #1a2447;background:linear-gradient(180deg,#0b142d,#0b1329 50%, #091024);padding:12px;display:flex;flex-direction:column;gap:12px}
+    .card{background:linear-gradient(180deg,#0b1329,#0a1228);border:1px solid #1b2a55;border-radius:14px;box-shadow:inset 0 1px 0 #21377a66, 0 6px 24px rgba(0,0,0,.25);}
+    .card .hd{padding:12px 14px;border-bottom:1px solid #1a2447;font-weight:600;display:flex;align-items:center;justify-content:space-between}
+    .card .bd{padding:12px 14px}
+    label{display:block;font-size:.9rem;margin:8px 0 4px;color:#d4deffcc}
+    input,select,textarea{width:100%;padding:10px 12px;border-radius:10px;border:1px solid #263564;background:#0e1734;color:var(--text);outline:none;}
+    textarea{min-height:180px;font-family:ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, "Liberation Mono", "Courier New", monospace;}
+    .muted{color:#c7d3ff88;font-size:.9rem}
+    .row{display:flex;gap:8px}
+    .row > *{flex:1}
+    .kbd{background:#101a3a;border:1px solid #2a3b76;border-radius:6px;padding:2px 6px;font-family:monospace}
+
+    .main{display:grid;grid-template-rows: 1fr auto;}
+    .stage{position:relative}
+    canvas{width:100%;height:100%;display:block}
+    .grid-name{position:absolute;left:16px;top:16px;font-family:Orbitron;letter-spacing:.5px;padding:4px 10px;border-radius:10px;background:#0b142dcc;border:1px solid #23408e;box-shadow:var(--glow)}
+    .console{border-top:1px solid #1a2447;display:grid;grid-template-columns: 1fr 360px}
+    .console .left{border-right:1px solid #1a2447}
+    .toolbar{display:flex;gap:8px;padding:10px;border-bottom:1px solid #1a2447;background:linear-gradient(180deg,#0e1734,#0b142d)}
+    .status{padding:8px 12px;font-size:.9rem;color:#c7d3ff99}
+    .output{padding:10px 12px;min-height:120px;max-height:220px;overflow:auto;font-family:ui-monospace,monospace}
+
+    .auth-modal{position:fixed;inset:0;display:none;place-items:center;background:rgba(4,8,18,.65);backdrop-filter:blur(6px)}
+    .auth-modal .panel{width:min(520px,92vw)}
+    .auth-modal.show{display:grid}
+
+    .hint{font-size:.9rem;border-left:3px solid #2a3b76;padding-left:10px;color:#c7d3ffbb}
+    code.inline{font-family:ui-monospace,monospace;background:#0f1939;padding:2px 6px;border-radius:6px;border:1px solid #2a3b76}
+
+    .neon{color:var(--accent);text-shadow:var(--glow)}
+    .hidden{display:none}
+  </style>
+</head>
+<body>
+  <div class="shell">
+    <header>
+      <div class="logo">
+        <div class="logo-mark" aria-hidden="true"></div>
+        <div class="title">G.R.I.D.<small>Glow Runtime Instruction Domain</small></div>
+      </div>
+      <div class="spacer"></div>
+      <div class="authbar">
+        <span id="auth-username" class="muted"></span>
+        <button id="btn-open-options" class="btn ghost hidden">Options</button>
+        <button id="btn-signin" class="btn primary">Sign In</button>
+        <button id="btn-signout" class="btn warn hidden">Sign Out</button>
+      </div>
+    </header>
+
+    <aside class="sidebar">
+      <section class="card">
+        <div class="hd">New Grid</div>
+        <div class="bd">
+          <label for="gridName">Grid Name</label>
+          <input id="gridName" placeholder="E.g. Neon Mesa" />
+          <div style="height:8px"></div>
+          <button id="btn-new" class="btn primary" title="Create a new empty grid">Create</button>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="hd">Your Grids <span id="gridCount" class="muted"></span></div>
+        <div class="bd" id="gridList">
+          <div class="muted">Sign in to load & save your creations.</div>
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="hd">TronCode Quickstart</div>
+        <div class="bd">
+          <div class="hint">Type commands in the editor below and click <strong>Run</strong>.</div>
+          <ul class="muted" style="margin-top:10px;line-height:1.5">
+            <li><code class="inline">GRID "Name"</code> — rename the grid.</li>
+            <li><code class="inline">SPAWN x y [color]</code> — add a node. Example: <code class="inline">SPAWN 4 2 cyan</code>.</li>
+            <li><code class="inline">LINK a b</code> — connect node <em>a</em> to node <em>b</em> by id.</li>
+            <li><code class="inline">MOVE id x y</code> — move a node.</li>
+            <li><code class="inline">DELETE id</code> — delete a node.</li>
+            <li><code class="inline">FILL [color]</code> — change background glow.</li>
+            <li><code class="inline">CLEAR</code> — wipe nodes & links.</li>
+            <li><code class="inline">SAVE</code> — persist immediately.</li>
+          </ul>
+        </div>
+      </section>
+    </aside>
+
+    <main class="main">
+      <section class="stage">
+        <canvas id="view" width="1920" height="1080" aria-label="GRID canvas"></canvas>
+        <div class="grid-name"><span class="neon" id="gridTitle">Untitled Grid</span></div>
+      </section>
+      <section class="console">
+        <div class="left">
+          <div class="toolbar">
+            <button id="btn-run" class="btn primary">Run</button>
+            <button id="btn-save" class="btn">Save</button>
+            <button id="btn-reset" class="btn ghost">Clear</button>
+            <div class="spacer"></div>
+            <span class="status" id="status">Ready.</span>
+          </div>
+          <div class="bd" style="padding:10px">
+            <textarea id="editor" spellcheck="false" placeholder="// Try this\nGRID \"Neon Basin\"\nFILL deep\nSPAWN 2 2 cyan\nSPAWN 8 4 magenta\nLINK 1 2\n"></textarea>
+          </div>
+        </div>
+        <div class="right">
+          <div class="bd" style="padding:10px">
+            <div class="card">
+              <div class="hd">Output</div>
+              <div class="bd output" id="output"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <footer style="grid-column:1/-1;border-top:1px solid #1a2447;background:linear-gradient(180deg,#0b142d,#0a1228)">
+      <div style="padding:10px 14px;display:flex;gap:12px;align-items:center">
+        <span class="muted">Built on <a href="https://supabase.com/" target="_blank" rel="noreferrer">Supabase</a>. © G.R.I.D.</span>
+        <div class="spacer"></div>
+        <span class="muted">Tip: Hold <span class="kbd">Shift</span> while dragging nodes.</span>
+      </div>
+    </footer>
+  </div>
+
+  <!-- Auth Modal -->
+  <div class="auth-modal" id="authModal" aria-hidden="true">
+    <div class="card panel">
+      <div class="hd">Sign in to G.R.I.D.</div>
+      <div class="bd">
+        <p class="muted">Create an account with just a <strong>username</strong> and <strong>password</strong>. You can add an email later in Options.</p>
+        <div class="row">
+          <div>
+            <label>Username</label>
+            <input id="authUsername" placeholder="e.g. NeonKnight" />
+          </div>
+          <div>
+            <label>Password</label>
+            <input id="authPassword" type="password" placeholder="••••••••" />
+          </div>
+        </div>
+        <div style="height:8px"></div>
+        <div class="row">
+          <button class="btn primary" id="btnDoSignUp">Create Account</button>
+          <button class="btn" id="btnDoSignIn">Sign In</button>
+          <button class="btn ghost" id="btnCloseAuth">Cancel</button>
+        </div>
+        <p class="hint" style="margin-top:10px">Behind the scenes, G.R.I.D. uses a temporary email like <code class="inline">username@grid.local</code> to satisfy auth. You can replace it later in Options.</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- Options Modal -->
+  <div class="auth-modal" id="optsModal" aria-hidden="true">
+    <div class="card panel">
+      <div class="hd">Options</div>
+      <div class="bd">
+        <p class="muted">Link a real email to your account (optional). Changing email may require confirmation, depending on your Supabase settings.</p>
+        <label for="optEmail">Email</label>
+        <input id="optEmail" placeholder="you@example.com" />
+        <div style="height:8px"></div>
+        <div class="row">
+          <button id="btnSaveEmail" class="btn primary">Save Email</button>
+          <button id="btnCloseOpts" class="btn">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script type="module">
+    // === Supabase Setup ===
+    import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
+
+    const SUPABASE_URL = "https://YOUR_PROJECT_ID.supabase.co"; // <-- set this
+    const SUPABASE_ANON = "YOUR_ANON_PUBLIC_KEY"; // <-- set this
+
+    const supabase = createClient(SUPABASE_URL, SUPABASE_ANON, {
+      auth: { persistSession: true, storageKey: "grid-auth-v1" },
+    });
+
+    // === DOM helpers ===
+    const $ = (sel) => document.querySelector(sel);
+    const $$ = (sel) => document.querySelectorAll(sel);
+    const byId = (id) => document.getElementById(id);
+
+    const els = {
+      view: byId('view'), ctx: byId('view').getContext('2d'),
+      title: byId('gridTitle'),
+      status: byId('status'), out: byId('output'),
+      editor: byId('editor'),
+      gridName: byId('gridName'),
+      gridList: byId('gridList'), gridCount: byId('gridCount'),
+      btnNew: byId('btn-new'), btnRun: byId('btn-run'), btnSave: byId('btn-save'), btnReset: byId('btn-reset'),
+      authModal: byId('authModal'), btnSignin: byId('btn-signin'), btnSignout: byId('btn-signout'),
+      authUsername: byId('authUsername'), authPassword: byId('authPassword'), btnDoSignUp: byId('btnDoSignUp'), btnDoSignIn: byId('btnDoSignIn'), btnCloseAuth: byId('btnCloseAuth'),
+      authUserLabel: byId('auth-username'),
+      optsModal: byId('optsModal'), btnOpenOpts: byId('btn-open-options'), btnCloseOpts: byId('btnCloseOpts'), optEmail: byId('optEmail'), btnSaveEmail: byId('btnSaveEmail')
+    };
+
+    // === State ===
+    let session = null;
+    let profile = null;
+
+    const state = {
+      gridId: null,
+      name: 'Untitled Grid',
+      fill: 'deep',
+      nodes: [], // {id,x,y,color}
+      links: [], // {a,b}
+      dirty: false,
+    };
+
+    // === Utility ===
+    const log = (...a)=>{ els.out.innerHTML += a.join(' ') + "\n"; els.out.scrollTop = els.out.scrollHeight; }
+    const setStatus = (s)=> els.status.textContent = s;
+    const clamp = (v,min,max)=>Math.max(min, Math.min(max, v));
+
+    function gridToJSON(){
+      return { name: state.name, fill: state.fill, nodes: state.nodes, links: state.links };
+    }
+
+    function applyJSON(obj){
+      state.name = obj.name ?? 'Untitled Grid';
+      state.fill = obj.fill ?? 'deep';
+      state.nodes = Array.isArray(obj.nodes) ? obj.nodes : [];
+      state.links = Array.isArray(obj.links) ? obj.links : [];
+      els.title.textContent = state.name;
+      draw();
+    }
+
+    // === Canvas Rendering ===
+    const DPR = Math.max(1, window.devicePixelRatio || 1);
+    function resizeCanvas(){
+      const {view, ctx} = els;
+      const rect = view.getBoundingClientRect();
+      view.width = Math.floor(rect.width * DPR);
+      view.height = Math.floor((window.innerHeight - 280) * DPR);
+      ctx.setTransform(DPR,0,0,DPR,0,0);
+      draw();
+    }
+
+    function glowLine(ctx, x1,y1,x2,y2, color){
+      ctx.save();
+      ctx.strokeStyle = color; ctx.lineWidth = 2; ctx.shadowColor = color; ctx.shadowBlur = 16; ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.restore();
+    }
+
+    function drawGridBack(ctx){
+      const w = els.view.width / DPR, h = els.view.height / DPR;
+      ctx.clearRect(0,0,w,h);
+      // background gradient
+      const grad = ctx.createLinearGradient(0,0,0,h);
+      const bg = state.fill;
+      if(bg==='deep'){ grad.addColorStop(0,'#071028'); grad.addColorStop(1,'#040915'); }
+      else if(bg==='cyan'){ grad.addColorStop(0,'#072a2f'); grad.addColorStop(1,'#041415'); }
+      else if(bg==='magenta'){ grad.addColorStop(0,'#1a0a23'); grad.addColorStop(1,'#090414'); }
+      else { grad.addColorStop(0,'#0a0f1e'); grad.addColorStop(1,'#040611'); }
+      ctx.fillStyle = grad; ctx.fillRect(0,0,w,h);
+
+      // perspective grid
+      ctx.strokeStyle = '#1c2b56'; ctx.lineWidth = 1; ctx.globalAlpha = .6;
+      const spacing = 40; const horizon = h*0.55; const vanishingY = horizon;
+      // vertical lines (toward a vanishing point)
+      for(let x=-w; x<w*2; x+=spacing){
+        ctx.beginPath(); ctx.moveTo(x, h); ctx.lineTo(w/2, vanishingY); ctx.stroke();
+      }
+      // horizontal lines
+      for(let y=spacing; y<h; y+=spacing){
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(w, y); ctx.stroke();
+      }
+      ctx.globalAlpha = 1;
+    }
+
+    function draw(){
+      const {ctx} = els; if(!ctx) return;
+      drawGridBack(ctx);
+      // links
+      state.links.forEach(l=>{
+        const a = state.nodes.find(n=>n.id===l.a); const b = state.nodes.find(n=>n.id===l.b); if(!a||!b) return;
+        glowLine(ctx, a.x*40+60, a.y*40+60, b.x*40+60, b.y*40+60, 'rgba(111,255,255,.8)');
+      });
+      // nodes
+      state.nodes.forEach(n=>{
+        ctx.save();
+        const px = n.x*40+60, py = n.y*40+60;
+        const color = (n.color||'cyan');
+        const neon = color==='magenta'?'#ff66f3':color==='green'?'#7dffb7':color==='yellow'?'#ffd166':color==='white'?'#e9edff':'#6ff';
+        ctx.fillStyle = neon; ctx.shadowColor = neon; ctx.shadowBlur = 18;
+        ctx.beginPath(); ctx.arc(px,py,8,0,Math.PI*2); ctx.fill();
+        // id label
+        ctx.shadowBlur = 0; ctx.font = '12px Orbitron, monospace'; ctx.fillStyle = '#c7d3ffcc'; ctx.fillText('#'+n.id, px+10, py-10);
+        ctx.restore();
+      });
+    }
+
+    window.addEventListener('resize', resizeCanvas);
+    resizeCanvas();
+
+    // === Node interactions (dragging) ===
+    let dragId = null; let dragOff = {x:0,y:0}; let shiftDrag = false;
+    els.view.addEventListener('pointerdown', (e)=>{
+      const rect=els.view.getBoundingClientRect(); const x=(e.clientX-rect.left)/DPR; const y=(e.clientY-rect.top)/DPR;
+      shiftDrag = e.shiftKey;
+      // pick nearest node
+      for(const n of state.nodes){
+        const dx = (n.x*40+60)-x, dy=(n.y*40+60)-y; if(dx*dx+dy*dy < 12*12){ dragId=n.id; dragOff={x, y}; break; }
+      }
+    });
+    window.addEventListener('pointermove',(e)=>{
+      if(dragId==null) return; const rect=els.view.getBoundingClientRect(); const x=(e.clientX-rect.left)/DPR; const y=(e.clientY-rect.top)/DPR;
+      const n = state.nodes.find(nn=>nn.id===dragId); if(!n) return;
+      const nx = clamp(Math.round((x-60)/40), 0, 48); const ny = clamp(Math.round((y-60)/40), 0, 24);
+      if(shiftDrag){ // elastic move with fractional preview
+        n.x = (x-60)/40; n.y = (y-60)/40;
+      } else { n.x = nx; n.y = ny; }
+      state.dirty = true; draw();
+    });
+    window.addEventListener('pointerup',()=>{ dragId=null; });
+
+    // === TronCode Parser/Runner ===
+    function parseTronCode(src){
+      const lines = src.split(/\r?\n/).map(s=>s.trim()).filter(s=>s && !s.startsWith('//'));
+      return lines.map((line,i)=>{
+        const parts = line.split(/\s+/);
+        const cmd = parts[0].toUpperCase();
+        const args = line.slice(cmd.length).trim();
+        return { i:i+1, cmd, raw:line, args, parts };
+      });
+    }
+
+    let nextId = 1;
+    function runTronCode(src){
+      const prog = parseTronCode(src);
+      let messages = [];
+      for(const ins of prog){
+        try{
+          switch(ins.cmd){
+            case 'GRID':{
+              const m = ins.args.match(/\"(.+?)\"/);
+              if(!m) throw new Error('GRID requires a quoted name.');
+              state.name = m[1]; els.title.textContent = state.name; messages.push(`Set grid name → ${state.name}`);
+              break;}
+            case 'SPAWN':{
+              const [x,y,c] = ins.args.split(/\s+/);
+              const nx = parseFloat(x), ny=parseFloat(y); if(isNaN(nx)||isNaN(ny)) throw new Error('SPAWN needs coordinates');
+              const node = { id: nextId++, x:nx, y:ny, color:(c||'cyan').toLowerCase() };
+              state.nodes.push(node); messages.push(`Spawned node #${node.id} at (${nx},${ny})`);
+              break;}
+            case 'LINK':{
+              const [a,b] = ins.args.split(/\s+/).map(v=>parseInt(v,10));
+              if(!a||!b) throw new Error('LINK needs two node ids');
+              state.links.push({a,b}); messages.push(`Linked #${a} ↔ #${b}`);
+              break;}
+            case 'MOVE':{
+              const [id,x,y] = ins.args.split(/\s+/); const nid=parseInt(id,10), nx=parseFloat(x), ny=parseFloat(y);
+              const n = state.nodes.find(nn=>nn.id===nid); if(!n) throw new Error(`No node #${nid}`);
+              n.x=nx; n.y=ny; messages.push(`Moved #${nid} → (${nx},${ny})`);
+              break;}
+            case 'DELETE':{
+              const nid = parseInt(ins.args,10); const idx = state.nodes.findIndex(n=>n.id===nid);
+              if(idx<0) throw new Error(`No node #${nid}`);
+              state.nodes.splice(idx,1); state.links = state.links.filter(l=>l.a!==nid && l.b!==nid);
+              messages.push(`Deleted node #${nid}`);
+              break;}
+            case 'FILL':{
+              const c = (ins.args||'deep').trim().toLowerCase();
+              state.fill = c||'deep'; messages.push(`Background → ${state.fill}`);
+              break;}
+            case 'CLEAR':{
+              state.nodes.length=0; state.links.length=0; nextId = 1; messages.push('Cleared grid.');
+              break;}
+            case 'SAVE':{
+              messages.push('Saving…'); awaitSave(true);
+              break;}
+            default:
+              throw new Error(`Unknown command: ${ins.cmd}`);
+          }
+        }catch(err){ messages.push(`Line ${ins.i}: ${err.message}`); }
+      }
+      draw();
+      if(messages.length) log(messages.join('\n'));
+      state.dirty = true;
+    }
+
+    // === Persistence ===
+    async function listGrids(){
+      if(!session) { els.gridList.innerHTML = '<div class="muted">Sign in to load & save your creations.</div>'; els.gridCount.textContent=''; return; }
+      const { data, error } = await supabase.from('grids').select('id,name,updated_at').order('updated_at',{ascending:false}).limit(50);
+      if(error){ els.gridList.innerHTML = `<div class="muted">${error.message}</div>`; return; }
+      els.gridList.innerHTML = '';
+      data.forEach(g=>{
+        const btn = document.createElement('button'); btn.className='btn'; btn.style.width='100%'; btn.style.marginBottom='6px'; btn.textContent = `${g.name}`;
+        btn.title = `Updated ${new Date(g.updated_at).toLocaleString()}`;
+        btn.onclick = ()=> loadGrid(g.id);
+        els.gridList.appendChild(btn);
+      });
+      els.gridCount.textContent = data.length ? `(${data.length})` : '';
+    }
+
+    async function loadGrid(id){
+      setStatus('Loading…');
+      const { data, error } = await supabase.from('grids').select('id,name,state').eq('id', id).single();
+      if(error){ setStatus(error.message); return; }
+      state.gridId = data.id; applyJSON(data.state || {}); els.title.textContent = data.name || 'Untitled Grid';
+      // set nextId properly
+      nextId = (state.nodes.reduce((m,n)=>Math.max(m,n.id),0) || 0) + 1;
+      setStatus('Loaded.');
+    }
+
+    async function awaitSave(verbose=false){
+      if(!session){ if(verbose) log('Sign in required to save.'); return; }
+      const payload = { name: state.name, state: gridToJSON() };
+      let res;
+      if(state.gridId){
+        res = await supabase.from('grids').update(payload).eq('id', state.gridId).select('id').single();
+      } else {
+        res = await supabase.from('grids').insert(payload).select('id').single();
+      }
+      const { data, error } = res;
+      if(error){ setStatus(error.message); log('Save error:', error.message); return; }
+      state.gridId = data.id; state.dirty=false; setStatus('Saved.');
+      listGrids();
+    }
+
+    // Auto-save every 10s if dirty
+    setInterval(()=>{ if(state.dirty) awaitSave(false); }, 10000);
+
+    // === Auth ===
+    function openAuth(){ els.authModal.classList.add('show'); els.authModal.setAttribute('aria-hidden','false'); }
+    function closeAuth(){ els.authModal.classList.remove('show'); els.authModal.setAttribute('aria-hidden','true'); }
+    function openOpts(){ els.optsModal.classList.add('show'); }
+    function closeOpts(){ els.optsModal.classList.remove('show'); }
+
+    async function refreshUserUI(){
+      session = (await supabase.auth.getSession()).data.session;
+      if(session){
+        els.btnSignin.classList.add('hidden');
+        els.btnSignout.classList.remove('hidden');
+        els.btnOpenOpts.classList.remove('hidden');
+        // load profile
+        const { data: prof } = await supabase.from('profiles').select('username').eq('id', session.user.id).single();
+        profile = prof || null;
+        els.authUserLabel.textContent = profile ? `@${profile.username}` : session.user.email;
+        listGrids();
+      } else {
+        els.btnSignin.classList.remove('hidden');
+        els.btnSignout.classList.add('hidden');
+        els.btnOpenOpts.classList.add('hidden');
+        els.authUserLabel.textContent = '';
+        listGrids();
+      }
+    }
+
+    async function upsertProfile(uid, username){
+      return await supabase.from('profiles').upsert({ id: uid, username }, { onConflict: 'id' });
+    }
+
+    els.btnSignin.onclick = openAuth;
+    els.btnSignout.onclick = async ()=>{ await supabase.auth.signOut(); session=null; profile=null; await refreshUserUI(); };
+    els.btnDoSignUp.onclick = async ()=>{
+      const username = els.authUsername.value.trim(); const password = els.authPassword.value;
+      if(username.length<3) return alert('Username must be at least 3 chars.');
+      if(password.length<6) return alert('Password must be at least 6 chars.');
+      const pseudoEmail = `${username}@grid.local`;
+      const { data, error } = await supabase.auth.signUp({ email: pseudoEmail, password });
+      if(error){ alert(error.message); return; }
+      await upsertProfile(data.user.id, username);
+      closeAuth(); await refreshUserUI();
+    };
+    els.btnDoSignIn.onclick = async ()=>{
+      const username = els.authUsername.value.trim(); const password = els.authPassword.value;
+      const email = `${username}@grid.local`;
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
+      if(error){ alert(error.message); return; }
+      closeAuth(); await refreshUserUI();
+    };
+    els.btnCloseAuth.onclick = closeAuth;
+
+    els.btnOpenOpts.onclick = openOpts;
+    els.btnCloseOpts.onclick = closeOpts;
+    els.btnSaveEmail.onclick = async ()=>{
+      const email = els.optEmail.value.trim(); if(!email) return;
+      const { error } = await supabase.auth.updateUser({ email });
+      if(error) alert(error.message); else alert('Email update requested. Check your inbox.');
+    };
+
+    supabase.auth.onAuthStateChange((_evt,_session)=>{ session=_session; refreshUserUI(); });
+    refreshUserUI();
+
+    // === Wire buttons ===
+    els.btnNew.onclick = ()=>{ state.gridId=null; state.name = (els.gridName.value.trim() || 'Untitled Grid'); els.title.textContent = state.name; state.fill='deep'; state.nodes=[]; state.links=[]; nextId=1; draw(); state.dirty=true; };
+    els.btnRun.onclick = ()=> runTronCode(els.editor.value);
+    els.btnSave.onclick = ()=> awaitSave(true);
+    els.btnReset.onclick = ()=>{ state.nodes=[]; state.links=[]; nextId=1; draw(); state.dirty=true; };
+
+  </script>
+</body>
+</html>
